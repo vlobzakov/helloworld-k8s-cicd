@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: BRANCH_NAME
+  name: hw-service
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: api-service
+  template:
+    metadata:
+      labels:
+        app: api-service
+    spec:
+      containers:
+        - name: api-service
+          image: repository/hw-service:BRANCH_NAME-${CI_PIPELINE_ID}
+          ports:
+            - containerPort: 8080
+            
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: BRANCH_NAME
+  name: hw-service
+spec:
+  selector:
+    app: hw-service
+  ports:
+    - name: service
+      port: 8080
+
