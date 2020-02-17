@@ -5,7 +5,7 @@ services:
 variables:
   SPRING_PROFILES_ACTIVE: gitlab-ci
   DOCKER_DRIVER: overlay2
-  CI_REGISTRY_IMAGE: mygitlab.vip.jelastic.cloud:8443/root/ci-demo/hw-service:${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}
+  CI_REGISTRY_IMAGE: ${REGISTRY_HOST}:${REGISTRY_PORT}/root/helloworld-k8s-cicd/hw-service:${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}
 
 cache:
   paths:
@@ -51,7 +51,7 @@ hw-service-package:
   script: |-
          echo Artifact to deploy: $(ls -1 ./service/target/*.war)
          docker build -t $CI_REGISTRY_IMAGE .
-         docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD mygitlab.vip.jelastic.cloud:8443
+         docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD ${REGISTRY_HOST}:${REGISTRY_PORT}
          docker push $CI_REGISTRY_IMAGE
   retry: 2
   only:
