@@ -7,15 +7,15 @@ spec:
   replicas: 1 
   selector:
     matchLabels:
-      app: api-service
+      app: hw-service
   template:
     metadata:
       labels:
-        app: api-service
+        app: hw-service
     spec:
       containers:
-        - name: api-service
-          image: repository/hw-service:BRANCH_NAME-${CI_PIPELINE_ID}
+        - name: hw-service
+          image: mygitlab.vip.jelastic.cloud:8443/root/ci-demo/hw-service:${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}
           ports:
             - containerPort: 8080
             
