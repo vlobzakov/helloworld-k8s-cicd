@@ -5,13 +5,12 @@ services:
 variables:
   SPRING_PROFILES_ACTIVE: gitlab-ci
   DOCKER_DRIVER: overlay2
-  DOCKER_HOST: tcp://10.0.100.100:5555
-  CI_REGISTRY_IMAGE: ihorman/hw-service:${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}
+  CI_REGISTRY_IMAGE: mygitlab.vip.jelastic.cloud:8443/root/ci-demo/hw-service:${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}
 
 cache:
   paths:
     - .m2/repository/
-    - server/target/
+    - service/target/
     
 stages:
   - build
@@ -20,39 +19,39 @@ stages:
   - deploy-topology
   - deploy-version
 
-api-service-build:
+hw-service-build:
   image: maven:3.6.3-jdk-13
   stage: build
   script: |-
-        cd server
+        cd service
         mvn package -B -X
   retry: 2  
   only:
     changes:
       - Dockerfile
-      - server/**/*
+      - service/**/*
   artifacts:
     paths:
-      - server/target/*.jar
+      - service/target/*.war
       
-api-service-test:
+hw-service-test:
   image: maven:3-jdk-8
   stage: test
   script: "echo TEST OK"
   only:
     changes:
-      - server/**/*
+      - service/**/*
 
-api-service-package:
+hw-service-package:
   stage: package
   image: docker:dind
-  needs: ["api-service-build"]
+  needs: ["hw-service-build"]
   services:
   - docker:dind
   script: |-
-         echo Artifact to deploy: $(ls -1 ./server/target/*.jar)
+         echo Artifact to deploy: $(ls -1 ./service/target/*.war)
          docker build -t $CI_REGISTRY_IMAGE .
-         docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+         docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD mygitlab.vip.jelastic.cloud:8443
          docker push $CI_REGISTRY_IMAGE
   retry: 2
   only:
@@ -71,7 +70,7 @@ deploy-topology:
       kubectl config use-context default;
       sed -i "s/BRANCH_NAME/$CI_COMMIT_REF_NAME/g" topology/*.yaml;
       kubectl apply -f topology/namespace.yaml;
-      kubectl apply -f topology/helloworld.yaml;
+      kubectl apply -f topology/hw-service.yaml;
   only:
     changes:
       - topology/**/*
@@ -81,7 +80,7 @@ deploy-service:
   image: google/cloud-sdk
   stage: deploy-version
   script: |-
-        echo "Deploying API Service"l
+        echo "Deploying HW Service"l
         echo "Executed in runnner:" $(hostname)
         kubectl config set-cluster k8s --server="${K8S_SERVER}"
         kubectl config set clusters.k8s.certificate-authority-data "${K8S_CA_B64}"
@@ -89,9 +88,9 @@ deploy-service:
         kubectl config set-context default --cluster=k8s --user=gitlab
         kubectl config use-context default
         kubectl set image deployment hw-service hw-service=${CI_REGISTRY_IMAGE} -n ${CI_COMMIT_REF_NAME}
-        echo "API Service Deployment Compleated, version:" ${CI_REGISTRY_IMAGE}
+        echo "HW Service Deployment Compleated, version:" ${CI_REGISTRY_IMAGE}
 
   only:
     changes:
-      - server/**/*
+      - service/**/*
   
